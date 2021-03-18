@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { v4: uuidv4, validate } = require('uuid');
+const { response } = require('express');
 
 const app = express();
 app.use(express.json());
@@ -10,19 +11,61 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+
+  const user = users.find((user) => user.username === username)
+
+  if(!user)
+    return response.status(404).json({error: "usuário não encontrado"});
+  
+  request.user = user;
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const {user} = request;
+
+  if((user.todos.length < 10 && user.pro === false) || user.pro === true)
+    return next();
+  else
+    return response.status(403).json({error: "usuário possui mais de 10 todos cadastrados"});  
+  
+
 }
 
+
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+  const {id} = request.params;
+
+  if(!validate(id)){
+    response.status(400).json({error: "id não é valido"});
+  }
+
+  const user = users.find((user) => user.username === username);
+  if(!user)
+    return response.status(404).json({error: "usuario não encontrado"});
+
+  const todo = user.todos.find((todo) => todo.id === id);
+  
+  if(!todo)
+    return response.status(404).json({error: "todo não encontrado"});
+
+  request.todo = todo;
+  request.user = user;
+  return next();
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const {id} = request.params;
+
+  const user = users.find((user) => user.id === id);
+  
+  if(!user)
+    return response.status(404).json({error: "usuário não encontrado"});
+  
+  request.user = user;
+  return next();
 }
 
 app.post('/users', (request, response) => {
